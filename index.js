@@ -6,6 +6,7 @@ const view = canvas.getContext("2d");
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    view.lineJoin = "round";
     view.translate(canvas.width / 2, canvas.height / 2);
     view.scale(1, -1);
 
@@ -109,7 +110,7 @@ class Cube {
     }
 }
 
-const cube = new Cube(0, 0, 20, 4);
+const cube = new Cube(0, 0, 20, 2);
 const gui = new dat.GUI();
 gui.add(cube.position, "x", -30, 30);
 gui.add(cube.position, "y", -30, 30);
@@ -118,6 +119,8 @@ function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
     cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    //cube.rotation.z += 0.01;
     cube.draw();
 
     requestAnimationFrame(animate);
