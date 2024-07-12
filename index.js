@@ -103,17 +103,18 @@ class Cube {
         this.rotation = { x: 0, y: 0, z: 0 };
     }
     draw() {
-        const xYpoints = [], wPoints = [];
+        const points = [], xYpoints = [], wPoints = [];
         for (let i = 0; i < this.model.length; ++i) {
-            const lp = this.toLocalPoint(this.model[i]);
-            const wp = this.toWorldPoint(lp);
+            //const lp = this.toLocalPoint(this.model[i]);
+            const wp = this.toWorldPoint(this.model[i]);
             const cp = this.toXyPoint(wp);
             wPoints.push(wp);
             xYpoints.push(cp);
+            points.push(cp);
         }
 
-        for (const f of this.faces) f.draw(wPoints, xYpoints);
-/*
+        //for (const f of this.faces) f.draw(wPoints, xYpoints);
+
         view.beginPath();
         this.moveTo(points[0]);
         this.lineTo(points[1]);
@@ -137,7 +138,7 @@ class Cube {
         this.lineTo(points[7]);
 
         view.stroke();
-*/
+
     }
     rotate(p, rotation, axis) {
         const angle = rotation[axis];
