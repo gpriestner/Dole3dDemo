@@ -192,10 +192,19 @@ class Cube {
 const pointLight = new PointLight(10, 10, 0);
 const cube = new Cube(0, 0, 20, 2);
 const gui = new dat.GUI();
-gui.add(cube, "scale", 0.5, 10);
-gui.add(cube.position, "x", -30, 30);
-gui.add(cube.position, "y", -30, 30);
-gui.add(cube.position, "z", 5, 250);
+const cubeFolder = gui.addFolder("Cube");
+cubeFolder.add(cube, "scale", 0.5, 10);
+cubeFolder.add(cube.position, "x", -30, 30);
+cubeFolder.add(cube.position, "y", -30, 30);
+cubeFolder.add(cube.position, "z", 5, 250);
+cubeFolder.add(cube.rotation, "x", -Math.PI, Math.PI);
+cubeFolder.add(cube.rotation, "y", -Math.PI, Math.PI);
+cubeFolder.add(cube.rotation, "z", 5, 250);
+const lightFolder = gui.addFolder("Light");
+lightFolder.add(pointLight.position, "x", -20, 20);
+lightFolder.add(pointLight.position, "y", -20, 20);
+lightFolder.add(pointLight.position, "z", -20, 20);
+lightFolder.addColor(pointLight, "color");
 function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
