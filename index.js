@@ -46,10 +46,16 @@ class Pt {
         this.z = z;
     }
 }
+class PointLight {
+    constructor(x, y, z) {
+        this.position = { x, y, z };
+        this.color = [255, 0, 0];
+    }
+}
 class Face {
     i = [];
     constructor() { for (const i of arguments) { this.i.push(i); } }
-    draw(wPoints, xYpoints) {
+    draw(wPoints, xYpoints, color) {
         const faceWorldPoints = [];
         for (const i of this.i) faceWorldPoints.push(wPoints[i]);
         const faceXyPoints = [];
@@ -66,12 +72,24 @@ class Face {
         const visible = dp < 0;
         
         if(visible) {
+            const lightVector = normalizeVector(subtractVector(faceWorldPoints[0], pointLight.position));
+            let dpLight = dotProcuct(normalVector, lightVector);
+            const ambientLightLevel = 0.35;
+            if (dpLight < ambientLightLevel) dpLight = ambientLightLevel;
+            let r = color[0] * dpLight * (pointLight.color[0] / 255);
+            if (r > 255) r = 255;
+            let g = color[1] * dpLight * (pointLight.color[1] / 255);
+            if (g > 255) g = 255;
+            let b = color[2] * dpLight * (pointLight.color[2] / 255);
+            if (b > 255) b = 255;
+            view.fillStyle = `rgb(${r},${g},${b})`;
             view.beginPath();
             this.moveTo(faceXyPoints[0]);
             this.lineTo(faceXyPoints[1]);
             this.lineTo(faceXyPoints[2]);
             this.lineTo(faceXyPoints[3]);
             this.lineTo(faceXyPoints[0]);
+            view.fill();
             view.stroke();
         }
     }
@@ -79,6 +97,7 @@ class Face {
     lineTo(p) { view.lineTo(p.x, p.y); }
 }
 class Cube {
+    color = [192, 192, 192];
     model = [
         new Pt(-1, 1, -1), // top-left front
         new Pt(1, 1, -1), // top-right front
@@ -113,7 +132,7 @@ class Cube {
             xYpoints.push(cp);
         }
 
-        for (const f of this.faces) f.draw(wPoints, xYpoints);
+        for (const f of this.faces) f.draw(wPoints, xYpoints, this.color);
 /*
         view.beginPath();
         this.moveTo(points[0]);
@@ -170,7 +189,7 @@ class Cube {
         return xyp;
     }
 }
-
+const pointLight = new PointLight(10, 10, 0);
 const cube = new Cube(0, 0, 20, 2);
 const gui = new dat.GUI();
 gui.add(cube, "scale", 0.5, 10);
