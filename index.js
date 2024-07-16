@@ -106,8 +106,8 @@ class Cube {
     draw() {
         const points = [], xYpoints = [], wPoints = [];
         for (let i = 0; i < this.model.length; ++i) {
-            //const lp = this.toLocalPoint(this.model[i]);
-            const wp = this.toWorldPoint(this.model[i]);
+            const lp = this.toLocalPoint(this.model[i]);
+            const wp = this.toWorldPoint(lp);
             const cp = this.toXyPoint(wp);
             wPoints.push(wp);
             xYpoints.push(cp);
