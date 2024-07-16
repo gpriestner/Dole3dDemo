@@ -14,6 +14,14 @@ function resize() {
     view.strokeStyle = "black";
 }
 
+resize();
+
+// view.beginPath();
+// view.moveTo(0, 0);
+// view.lineTo(100, 100);
+// view.stroke();
+
+// #region Utils
 function dotProcuct(v1, v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
@@ -29,14 +37,7 @@ function normalizeVector(v) {
 function subtractVector(v1, v2) { // return v1 -> v2
     return { x: v2.x-v1.x, y: v2.y-v1.y, z: v2.z-v1.z };
 }
-
-
-resize();
-
-// view.beginPath();
-// view.moveTo(0, 0);
-// view.lineTo(100, 100);
-// view.stroke();
+// #endregion
 
 class Pt {
     constructor(x, y, z) {
@@ -166,7 +167,9 @@ class Cube {
         return wp;
     }
     toXyPoint(p) {
-        const xyp = p.z > 0 ? { x: p.x / p.z * canvas.height, y: p.y / p.z * canvas.height } : null;
+        const xyp = p.z > 1
+          ? { x: p.x / p.z * canvas.height, y: p.y / p.z * canvas.height } 
+          : null;
         return xyp;
     }
 }
