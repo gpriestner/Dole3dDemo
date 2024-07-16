@@ -11,6 +11,7 @@ function resize() {
     view.scale(1, -1);
 
     view.lineWidth = 4;
+    view.lineJoin = "round";
     view.strokeStyle = "black";
 }
 
