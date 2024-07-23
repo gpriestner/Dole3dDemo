@@ -49,7 +49,7 @@ class Pt {
 class PointLight {
     constructor(x, y, z) {
         this.position = { x, y, z };
-        this.color = [255, 0, 0];
+        this.color = [255, 255, 255];
     }
 }
 class Face {
@@ -97,7 +97,7 @@ class Face {
     lineTo(p) { view.lineTo(p.x, p.y); }
 }
 class Cube {
-    color = [192, 192, 192];
+    color = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
     model = [
         new Pt(-1, 1, -1), // top-left front
         new Pt(1, 1, -1), // top-right front
@@ -122,11 +122,15 @@ class Cube {
         this.position = { x, y, z };
         this.rotation = { x: 0, y: 0, z: 0 };
     }
-    draw() {
+    draw(camera) {
+        this.rotation.x += 0.01;
+        this.rotation.y += 0.01;
+        //this.rotation.z += 0.01;
+
         const xYpoints = [], wPoints = [];
         for (let i = 0; i < this.model.length; ++i) {
             const lp = this.toLocalPoint(this.model[i]);
-            const wp = this.toWorldPoint(lp);
+            const wp = this.toWorldPoint(lp, camera);
             const cp = this.toXyPoint(wp);
             wPoints.push(wp);
             xYpoints.push(cp);
@@ -177,10 +181,10 @@ class Cube {
         const rz = this.rotate(ry, this.rotation, "z");
         return rz;
     }
-    toWorldPoint(p) {
-        const wp = { x: this.position.x + p.x * this.scale,
-                     y: this.position.y + p.y * this.scale,
-                     z: this.position.z + p.z * this.scale
+    toWorldPoint(p, camera) {
+        const wp = { x: (this.position.x - camera.position.x) + p.x * this.scale,
+                     y: (this.position.y - camera.position.y) + p.y * this.scale,
+                     z: (this.position.z - camera.position.z) + p.z * this.scale
          };
         return wp;
     }
@@ -189,8 +193,28 @@ class Cube {
         return xyp;
     }
 }
+class Camera {
+    constructor(x, y, z) {
+        this.position = { x, y, z };
+    }
+}
+class Scene {
+    objects = [];
+    add(o) { this.objects.push(o); }
+    draw(camera) { for(const o of this.objects) o.draw(camera); }
+}
+
 const pointLight = new PointLight(10, 10, 0);
 const cube = new Cube(0, 0, 20, 2);
+
+const scene = new Scene();
+scene.add(cube);
+
+const camera = new Camera(0, 0, 0);
+
+for (let i = 0; i < 100; ++i) scene.add(new Cube(Math.random() * 100 - 50,Math.random() * 100 - 50, Math.random() * 50 + 20, Math.random() * 4));
+
+// #region DatGui
 const gui = new dat.GUI();
 const cubeFolder = gui.addFolder("Cube");
 cubeFolder.add(cube, "scale", 0.5, 10);
@@ -205,13 +229,17 @@ lightFolder.add(pointLight.position, "x", -20, 20);
 lightFolder.add(pointLight.position, "y", -20, 20);
 lightFolder.add(pointLight.position, "z", -20, 20);
 lightFolder.addColor(pointLight, "color");
+
+const camFolder = gui.addFolder("Camera");
+camFolder.add(camera.position, "x", -20, 20);
+camFolder.add(camera.position, "y", -20, 20);
+camFolder.add(camera.position, "z", -20, 20);
+
+// #endregion
 function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    //cube.rotation.z += 0.01;
-    cube.draw();
+    scene.draw(camera);
 
     requestAnimationFrame(animate);
 }
