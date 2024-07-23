@@ -15,6 +15,18 @@ function resize() {
     view.strokeStyle = "black";
 }
 
+let wDown = false;
+let sDown = false;
+document.addEventListener("keydown", e => {
+    if (e.code == "KeyW") wDown = true;
+    if (e.code == "KeyS") sDown = true;
+});
+
+document.addEventListener("keyup", e => {
+    if (e.code == "KeyW") wDown = false;
+    if (e.code == "KeyS") sDown = false;
+});
+
 function dotProcuct(v1, v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
@@ -233,11 +245,15 @@ lightFolder.addColor(pointLight, "color");
 const camFolder = gui.addFolder("Camera");
 camFolder.add(camera.position, "x", -20, 20);
 camFolder.add(camera.position, "y", -20, 20);
-camFolder.add(camera.position, "z", -20, 20);
+camFolder.add(camera.position, "z", -20, 20).listen();
 
 // #endregion
 function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+
+    if (wDown) camera.position.z += 0.1;
+    if (sDown) camera.position.z -= 0.1;
+
 
     scene.draw(camera);
 
