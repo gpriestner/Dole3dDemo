@@ -26,7 +26,27 @@ document.addEventListener("keyup", e => {
     if (e.code == "KeyW") wDown = false;
     if (e.code == "KeyS") sDown = false;
 });
-
+document.addEventListener("pointerlockchange", lockChange);
+canvas.addEventListener("click", async e => {
+    if (e.button == 0) {
+        if (!document.pointerLockElement) {
+            await canvas.requestPointerLock({
+            unadjustedMovement: true,
+        });
+        } else {
+            await document.exitPointerLock();
+        }
+    }
+  }
+);
+function lockChange() {
+    if (document.pointerLockElement === canvas) document.addEventListener("mousemove", updatePosition);
+    else document.removeEventListener("mousemove", updatePosition);
+}
+function updatePosition(e) {
+    camera.rotation.x -= e.movementY / 1000;
+    camera.rotation.y += e.movementX / 1000;
+}
 function dotProcuct(v1, v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
@@ -105,8 +125,8 @@ class Face {
             view.stroke();
         }
     }
-    moveTo(p) { view.moveTo(p.x, p.y); }
-    lineTo(p) { view.lineTo(p.x, p.y); }
+    moveTo(p) { if(p) view.moveTo(p.x, p.y); }
+    lineTo(p) { if(p) view.lineTo(p.x, p.y); }
 }
 class Cube {
     color = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
@@ -133,19 +153,22 @@ class Cube {
         this.scale = s;
         this.position = { x, y, z };
         this.rotation = { x: 0, y: 0, z: 0 };
+        this.rdx = Math.random() * 0.06 - 0.03;
+        this.rdy = Math.random() * 0.06 - 0.03;
     }
     draw(camera) {
-        this.rotation.x += 0.01;
-        this.rotation.y += 0.01;
+        this.rotation.x += this.rdx;
+        this.rotation.y += this.rdy;
         //this.rotation.z += 0.01;
 
         const xYpoints = [], wPoints = [];
         for (let i = 0; i < this.model.length; ++i) {
             const lp = this.toLocalPoint(this.model[i]);
             const wp = this.toWorldPoint(lp, camera);
-            const cp = this.toXyPoint(wp);
+            const cp = this.toCameraPoint(wp, camera);
+            const xy = this.toXyPoint(cp);
             wPoints.push(wp);
-            xYpoints.push(cp);
+            xYpoints.push(xy);
         }
 
         for (const f of this.faces) f.draw(wPoints, xYpoints, this.color);
@@ -185,8 +208,8 @@ class Cube {
             case "z": return { x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos, z: p.z };
         }
     }
-    moveTo(p) { view.moveTo(p.x, p.y); }
-    lineTo(p) { view.lineTo(p.x, p.y); }
+    moveTo(p) { if(p) view.moveTo(p.x, p.y); }
+    lineTo(p) { if(p) view.lineTo(p.x, p.y); }
     toLocalPoint(p) {
         const rx = this.rotate(p, this.rotation, "x");
         const ry = this.rotate(rx, this.rotation, "y");
@@ -200,6 +223,12 @@ class Cube {
          };
         return wp;
     }
+    toCameraPoint(p, camera) {
+        const cp = subtractVector(camera.position, p);
+        const ry = this.rotate(cp, camera.rotation, "y");
+        const rx = this.rotate(ry, camera.rotation, "x");
+        return rx;
+    }
     toXyPoint(p) {
         const xyp = p.z > 0 ? { x: p.x / p.z * canvas.height, y: p.y / p.z * canvas.height } : null;
         return xyp;
@@ -208,6 +237,7 @@ class Cube {
 class Camera {
     constructor(x, y, z) {
         this.position = { x, y, z };
+        this.rotation = { x: 0, y: 0 };
     }
 }
 class Scene {
@@ -243,16 +273,20 @@ lightFolder.add(pointLight.position, "z", -20, 20);
 lightFolder.addColor(pointLight, "color");
 
 const camFolder = gui.addFolder("Camera");
-camFolder.add(camera.position, "x", -20, 20);
-camFolder.add(camera.position, "y", -20, 20);
-camFolder.add(camera.position, "z", -20, 20).listen();
+const positionFolder = camFolder.addFolder("Position");
+positionFolder.add(camera.position, "x", -20, 20);
+positionFolder.add(camera.position, "y", -20, 20);
+positionFolder.add(camera.position, "z", -20, 20).listen();
+const rotationFolder = camFolder.addFolder("Rotation");
+rotationFolder.add(camera.rotation, "x", -Math.PI, Math.PI);
+rotationFolder.add(camera.rotation, "y", -Math.PI, Math.PI);
 
 // #endregion
 function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
-    if (wDown) camera.position.z += 0.1;
-    if (sDown) camera.position.z -= 0.1;
+    if (wDown) camera.position.z += 0.5;
+    if (sDown) camera.position.z -= 0.5;
 
 
     scene.draw(camera);
