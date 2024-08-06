@@ -47,7 +47,7 @@ function updatePosition(e) {
     camera.rotation.x -= e.movementY / 1000;
     camera.rotation.y += e.movementX / 1000;
 }
-function dotProcuct(v1, v2) {
+function dotProduct(v1, v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 function crossProduct(v1, v2) {
@@ -61,6 +61,43 @@ function normalizeVector(v) {
 }
 function subtractVector(v1, v2) { // return v1 -> v2
     return { x: v2.x-v1.x, y: v2.y-v1.y, z: v2.z-v1.z };
+}
+function rotatePointAroundUnitVector(point, vector, angle) {
+    // 'vector' argument must already be a unit vector (otherwise use rotatePointAroundVector)
+    // Calculate the quaternion components
+    const halfAngle = angle / 2;
+    const cos = Math.cos(halfAngle);
+    const sin = Math.sin(halfAngle);
+    const qw = cos;
+    const qx = sin * vector.x;
+    const qy = sin * vector.y;
+    const qz = sin * vector.z;
+
+    const x =
+        (qw * qw + qx * qx - qy * qy - qz * qz) * point.x +
+        2 * (qx * qy - qw * qz) * point.y +
+        2 * (qx * qz + qw * qy) * point.z;
+
+    const y =
+        2 * (qx * qy + qw * qz) * point.x +
+        (qw * qw - qx * qx + qy * qy - qz * qz) * point.y +
+        2 * (qy * qz - qw * qx) * point.z;
+
+    const z =
+        2 * (qx * qz - qw * qy) * point.x +
+        2 * (qy * qz + qw * qx) * point.y +
+        (qw * qw - qx * qx - qy * qy + qz * qz) * point.z;
+
+    return { x, y, z };
+}
+function addVector(v1, v2) {
+    return { x: v1.x + v2.x, y: v1.y + v2.y, z: v1.z + v2.z };
+}
+function multiplyVector(v, f) {
+    return { x: v.x * f, y: v.y * f, z: v.z * f };
+}
+function length(v) {
+    return Math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2);
 }
 
 
@@ -98,14 +135,14 @@ class Face {
         const vectorAC = subtractVector(faceWorldPoints[2], faceWorldPoints[0]);
 
         const normalVector = crossProduct(vectorAB, vectorAC);
-        const cameraVector = faceWorldPoints[0];
+        const cameraVector = subtractVector(camera.position, faceWorldPoints[0]);
         const normalizedCameraVector = normalizeVector(cameraVector);
-        const dp = dotProcuct(normalVector, normalizedCameraVector);
+        const dp = dotProduct(normalVector, normalizedCameraVector);
         const visible = dp < 0;
         
         if(visible) {
             const lightVector = normalizeVector(subtractVector(faceWorldPoints[0], pointLight.position));
-            let dpLight = dotProcuct(normalVector, lightVector);
+            let dpLight = dotProduct(normalVector, lightVector);
             const ambientLightLevel = 0.35;
             if (dpLight < ambientLightLevel) dpLight = ambientLightLevel;
             let r = color[0] * dpLight * (pointLight.color[0] / 255);
@@ -223,6 +260,17 @@ class Cube {
          };
         return wp;
     }
+    // toCameraPoint(p, camera) {
+    //     const cp = subtractVector(camera.position, p);
+    //     const l = length(cp);
+    //     if (l > camera.max) return null;
+    //     const cv = normalizeVector(cp);
+    //     const dp = dotProduct(cv, camera.direction);
+    //     if (dp < 0 /*camera.fov*/) return null;
+    //     const ry = this.rotate(cp, camera.rotation, "y");
+    //     const rx = this.rotate(ry, camera.rotation, "x");
+    //     return rx;
+    // }
     toCameraPoint(p, camera) {
         const cp = subtractVector(camera.position, p);
         const ry = this.rotate(cp, camera.rotation, "y");
@@ -235,10 +283,20 @@ class Cube {
     }
 }
 class Camera {
+    forwardDirection = { x: 0, y: 0, z: 1 };
     constructor(x, y, z) {
         this.position = { x, y, z };
         this.rotation = { x: 0, y: 0 };
     }
+    get heading() { return { x: -Math.sin(-this.rotation.y), y: 0, z: Math.cos(-this.rotation.y) }; }
+    get pitchVector() { return { x: Math.cos(-this.rotation.y), y: 0, z: Math.sin(-this.rotation.y) }; }
+    get direction() { return rotatePointAroundUnitVector(this.heading, this.pitchVector, -this.rotation.x); }
+    moveForward(dist) {
+        const moveVector = multiplyVector(this.direction, dist);
+        const newPosition = addVector(this.position, moveVector);
+        Object.assign(this.position, newPosition);
+    }
+    moveBack(dist) { this.moveForward(-dist); }
 }
 class Scene {
     objects = [];
@@ -285,8 +343,8 @@ rotationFolder.add(camera.rotation, "y", -Math.PI, Math.PI);
 function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
-    if (wDown) camera.position.z += 0.5;
-    if (sDown) camera.position.z -= 0.5;
+    if (wDown) camera.moveForward(1);
+    if (sDown) camera.moveBack(1);
 
 
     scene.draw(camera);
