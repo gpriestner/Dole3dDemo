@@ -17,14 +17,20 @@ function resize() {
 
 let wDown = false;
 let sDown = false;
+let aDown = false;
+let dDown = false;
 document.addEventListener("keydown", e => {
     if (e.code == "KeyW") wDown = true;
     if (e.code == "KeyS") sDown = true;
+    if (e.code == "KeyA") aDown = true;
+    if (e.code == "KeyD") dDown = true;
 });
 
 document.addEventListener("keyup", e => {
     if (e.code == "KeyW") wDown = false;
     if (e.code == "KeyS") sDown = false;
+    if (e.code == "KeyA") aDown = false;
+    if (e.code == "KeyD") dDown = false;
 });
 document.addEventListener("pointerlockchange", lockChange);
 canvas.addEventListener("click", async e => {
@@ -115,6 +121,18 @@ class Pt {
         this.z = z;
     }
 }
+class GameObject {
+    rotate(p, rotation, axis) {
+        const angle = rotation[axis];
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        switch(axis) {
+            case "x": return { x: p.x, y: p.y * cos - p.z * sin, z: p.y * sin + p.z * cos };
+            case "y": return { x: p.x * cos - p.z * sin, y: p.y, z: p.x * sin + p.z * cos };
+            case "z": return { x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos, z: p.z };
+        }
+    }
+}
 class PointLight {
     constructor(x, y, z) {
         this.position = { x, y, z };
@@ -165,7 +183,7 @@ class Face {
     moveTo(p) { if(p) view.moveTo(p.x, p.y); }
     lineTo(p) { if(p) view.lineTo(p.x, p.y); }
 }
-class Cube {
+class Cube extends GameObject {
     color = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
     model = [
         new Pt(-1, 1, -1), // top-left front
@@ -187,6 +205,7 @@ class Cube {
         new Face(1,5,6,2), // right
     ]
     constructor(x, y, z, s = 1) {
+        super();
         this.scale = s;
         this.position = { x, y, z };
         this.rotation = { x: 0, y: 0, z: 0 };
@@ -235,16 +254,6 @@ class Cube {
         view.stroke();
 */
     }
-    rotate(p, rotation, axis) {
-        const angle = rotation[axis];
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        switch(axis) {
-            case "x": return { x: p.x, y: p.y * cos - p.z * sin, z: p.y * sin + p.z * cos };
-            case "y": return { x: p.x * cos - p.z * sin, y: p.y, z: p.x * sin + p.z * cos };
-            case "z": return { x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos, z: p.z };
-        }
-    }
     moveTo(p) { if(p) view.moveTo(p.x, p.y); }
     lineTo(p) { if(p) view.lineTo(p.x, p.y); }
     toLocalPoint(p) {
@@ -282,21 +291,35 @@ class Cube {
         return xyp;
     }
 }
-class Camera {
+class Camera extends GameObject {
     forwardDirection = { x: 0, y: 0, z: 1 };
+    rightVector = { x: 1, y: 0, z: 0 };
     constructor(x, y, z) {
+        super();
         this.position = { x, y, z };
         this.rotation = { x: 0, y: 0 };
     }
     get heading() { return { x: -Math.sin(-this.rotation.y), y: 0, z: Math.cos(-this.rotation.y) }; }
     get pitchVector() { return { x: Math.cos(-this.rotation.y), y: 0, z: Math.sin(-this.rotation.y) }; }
     get direction() { return rotatePointAroundUnitVector(this.heading, this.pitchVector, -this.rotation.x); }
+    get rightDirection() {
+        const rightPoint = this.rotate(this.rightVector, this.rotation, "y");
+        return rightPoint;
+    }
     moveForward(dist) {
         const moveVector = multiplyVector(this.direction, dist);
         const newPosition = addVector(this.position, moveVector);
         Object.assign(this.position, newPosition);
     }
     moveBack(dist) { this.moveForward(-dist); }
+    moveRight(dist) {
+        const rightVector = this.rightDirection; 
+        const moveVector = multiplyVector(rightVector, dist);
+        Object.assign(this.position, addVector(this.position, moveVector));
+    }
+    moveLeft(dist) {
+        this.moveRight(-dist);
+    }
 }
 class Scene {
     objects = [];
@@ -343,8 +366,10 @@ rotationFolder.add(camera.rotation, "y", -Math.PI, Math.PI);
 function animate() {
     view.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
-    if (wDown) camera.moveForward(1);
-    if (sDown) camera.moveBack(1);
+    if (wDown) camera.moveForward(0.5);
+    if (sDown) camera.moveBack(0.5);
+    if (aDown) camera.moveLeft(0.5);
+    if (dDown) camera.moveRight(0.5);
 
 
     scene.draw(camera);
